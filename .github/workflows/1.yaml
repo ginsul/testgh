@@ -1,0 +1,47 @@
+name: Build iOS App
+
+on:
+  workflow_dispatch:
+  issue_comment:
+    types: [created]
+  push:
+    tags:
+      - 'release-v*'
+
+jobs:
+  build-ios:
+    if: >
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       github.event.comment.body == '/build-ios')
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - brand: galaxy
+            environment: prod
+          - brand: greey
+            environment: prod
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || '' }}
+
+      - name: Inject Version
+        if: github.event_name == 'push'
+        run: ./inject-version.sh
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+
+      - name: Build
+        run: |
+          ./build.ci.sh
+        env:
+          RUN_BUILD_ONLY: true
+          ENVIRONMENT: ${{ matrix.environment }}
+          BRAND: ${{ matrix.brand }}
+          PLATFORM: ios
+          SKIP_TESTFLIGHT: ${{ github.event_name != 'push' && 'true' || 'false' }}
