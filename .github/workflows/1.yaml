@@ -30,7 +30,6 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || '' }}
 
-
       - name: Inject Version
         if: github.event_name == 'push'
         run: chmod +x build.ci.sh inject-version.sh && ./inject-version.sh
@@ -39,7 +38,7 @@ jobs:
 
       - name: Build
         run: |
-          ./build.ci.sh
+          chmod +x build.ci.sh inject-version.sh && ./build.ci.sh
         env:
           RUN_BUILD_ONLY: true
           ENVIRONMENT: ${{ matrix.environment }}
