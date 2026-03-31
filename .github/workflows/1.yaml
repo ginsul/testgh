@@ -8,6 +8,9 @@ on:
     tags:
       - 'release-v*'
 
+env:
+  BUILD_TARGETS: '[{"brand":"galaxy","environment":"prod"},{"brand":"cubit","environment":"prod"}]'
+
 jobs:
   gate:
     if: >
@@ -23,7 +26,7 @@ jobs:
       - name: Determine build matrix
         id: set-matrix
         run: |
-          ALL_BRANDS='[{"brand":"galaxy","environment":"prod"},{"brand":"cubit","environment":"prod"}]'
+          ALL_PROJECTS='${{ env.BUILD_TARGETS }}'
 
           if [ "${{ github.event_name }}" = "issue_comment" ]; then
             COMMENT="${{ github.event.comment.body }}"
@@ -31,21 +34,21 @@ jobs:
             REQUESTED_BRAND=$(echo "$COMMENT" | awk '{print $2}')
             if [ -n "$REQUESTED_BRAND" ]; then
               echo "Filtering matrix for brand: $REQUESTED_BRAND"
-              MATRIX=$(echo "$ALL_BRANDS" | jq -c --arg brand "$REQUESTED_BRAND" '[.[] | select(.brand == $brand)]')
+              MATRIX=$(echo "$ALL_PROJECTS" | jq -c --arg brand "$REQUESTED_BRAND" '[.[] | select(.brand == $brand)]')
               if [ "$MATRIX" = "[]" ]; then
-                VALID_BRANDS=$(echo "$ALL_BRANDS" | jq -r '[.[].brand] | join(", ")')
-                echo "::error::Unknown brand '$REQUESTED_BRAND'. Valid brands: $VALID_BRANDS"
+                VALID_PROJECTS=$(echo "$ALL_PROJECTS" | jq -r '[.[].brand] | join(", ")')
+                echo "::error::Unknown brand '$REQUESTED_BRAND'. Valid brands: $VALID_PROJECTS"
                 exit 1
               fi
             else
-              MATRIX="$ALL_BRANDS"
+              MATRIX="$ALL_PROJECTS"
             fi
           else
-            MATRIX="$ALL_BRANDS"
+            MATRIX="$ALL_PROJECTS"
           fi
 
           echo "matrix={\"include\":$MATRIX}" >> "$GITHUB_OUTPUT"
-          echo "Build matrix: $MATRIX"
+          echo "Build targets: $MATRIX"
 
   build-ios:
     needs: gate
