@@ -12,7 +12,7 @@ env:
   BUILD_TARGETS: '[{"brand":"galaxy","environment":"prod"},{"brand":"cubit","environment":"prod"}]'
 
 jobs:
-  gate:
+  pre-check:
     if: >
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
@@ -51,11 +51,11 @@ jobs:
           echo "Build targets: $MATRIX"
 
   build-ios:
-    needs: gate
+    needs: pre-check
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.gate.outputs.matrix) }}
+      matrix: ${{ fromJson(needs['pre-check'].outputs.matrix) }}
     steps:
       - name: Check brand filter
         id: brand-filter
