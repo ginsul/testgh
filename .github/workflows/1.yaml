@@ -9,21 +9,49 @@ on:
       - 'release-v*'
 
 jobs:
-  build-ios:
+  gate:
     if: >
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request &&
        (github.event.comment.body == '/build-ios' || startsWith(github.event.comment.body, '/build-ios ')))
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Determine build matrix
+        id: set-matrix
+        run: |
+          ALL_BRANDS='[{"brand":"glchat","environment":"prod"},{"brand":"catapa","environment":"prod"}]'
+
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            COMMENT="${{ github.event.comment.body }}"
+            # Extract brand argument: "/build-ios glchat" → "glchat"
+            REQUESTED_BRAND=$(echo "$COMMENT" | awk '{print $2}')
+            if [ -n "$REQUESTED_BRAND" ]; then
+              echo "Filtering matrix for brand: $REQUESTED_BRAND"
+              MATRIX=$(echo "$ALL_BRANDS" | jq -c --arg brand "$REQUESTED_BRAND" '[.[] | select(.brand == $brand)]')
+              if [ "$MATRIX" = "[]" ]; then
+                echo "::error::Unknown brand '$REQUESTED_BRAND'. Valid brands: glchat, catapa"
+                exit 1
+              fi
+            else
+              MATRIX="$ALL_BRANDS"
+            fi
+          else
+            MATRIX="$ALL_BRANDS"
+          fi
+
+          echo "matrix={\"include\":$MATRIX}" >> "$GITHUB_OUTPUT"
+          echo "Build matrix: $MATRIX"
+
+  build-ios:
+    needs: gate
     runs-on: ubuntu-24.04
     strategy:
-      matrix:
-        include:
-          - brand: galaxy
-            environment: prod
-          - brand: greey
-            environment: prod
+      fail-fast: false
+      matrix: ${{ fromJson(needs.gate.outputs.matrix) }}
     steps:
       - name: Check brand filter
         id: brand-filter
