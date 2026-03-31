@@ -23,7 +23,7 @@ jobs:
       - name: Determine build matrix
         id: set-matrix
         run: |
-          ALL_BRANDS='[{"brand":"glchat","environment":"prod"},{"brand":"catapa","environment":"prod"}]'
+          ALL_BRANDS='[{"brand":"galaxy","environment":"prod"},{"brand":"cubit","environment":"prod"}]'
 
           if [ "${{ github.event_name }}" = "issue_comment" ]; then
             COMMENT="${{ github.event.comment.body }}"
@@ -33,7 +33,7 @@ jobs:
               echo "Filtering matrix for brand: $REQUESTED_BRAND"
               MATRIX=$(echo "$ALL_BRANDS" | jq -c --arg brand "$REQUESTED_BRAND" '[.[] | select(.brand == $brand)]')
               if [ "$MATRIX" = "[]" ]; then
-                echo "::error::Unknown brand '$REQUESTED_BRAND'. Valid brands: glchat, catapa"
+                echo "::error::Unknown brand '$REQUESTED_BRAND'. Valid brands: galaxy, cubit"
                 exit 1
               fi
             else
