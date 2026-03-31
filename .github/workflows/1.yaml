@@ -33,7 +33,8 @@ jobs:
               echo "Filtering matrix for brand: $REQUESTED_BRAND"
               MATRIX=$(echo "$ALL_BRANDS" | jq -c --arg brand "$REQUESTED_BRAND" '[.[] | select(.brand == $brand)]')
               if [ "$MATRIX" = "[]" ]; then
-                echo "::error::Unknown brand '$REQUESTED_BRAND'. Valid brands: galaxy, cubit"
+                VALID_BRANDS=$(echo "$ALL_BRANDS" | jq -r '[.[].brand] | join(", ")')
+                echo "::error::Unknown brand '$REQUESTED_BRAND'. Valid brands: $VALID_BRANDS"
                 exit 1
               fi
             else
